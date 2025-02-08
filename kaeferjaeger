@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Check if domain argument is provided
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <domain_name>"
+    echo "Example: $0 example.com"
+    exit 1
+fi
+
+# Get the domain name from argument
+DOMAIN="$1"
+
+# Check if source directory exists
+if [ ! -d "/opt/subDOMAIN" ]; then
+    echo "Error: Source directory /opt/subDOMAIN does not exist"
+    exit 1
+fi
+
+# Create output filename based on domain name
+OUTPUT_FILE="${DOMAIN}.txt"
+
+# Change to the source directory
+cd "/opt/subDOMAIN" || exit 1
+
+# Execute the command with the provided domain and save to current directory
+cat *.txt 2>/dev/null | \
+    grep -F ".$DOMAIN" | \
+    awk -F'-- ' '{print $2}' | \
+    tr ' ' '\n' | \
+    tr '[' ' ' | \
+    sed 's/^[[:space:]]*//;s/\]$//' | \
+    grep -F ".$DOMAIN" | \
+    sort -u > "$OLDPWD/$OUTPUT_FILE"
+
+# Check if the command was successful and if output file was created
+if [ $? -eq 0 ] && [ -f "$OLDPWD/$OUTPUT_FILE" ]; then
+    echo "Processing complete. Results saved to: $OUTPUT_FILE"
+    echo "Found $(wc -l < "$OLDPWD/$OUTPUT_FILE") unique domains"
+else
+    echo "Error: No results found or error processing files"
+    # Clean up empty output file if it exists
+    [ -f "$OLDPWD/$OUTPUT_FILE" ] && rm "$OLDPWD/$OUTPUT_FILE"
+    exit 1
+fi
